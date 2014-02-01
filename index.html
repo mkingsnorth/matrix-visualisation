@@ -1,23 +1,38 @@
 <!DOCTYPE html>
 <html>
+<title>Matrix View Test Harness</title>
+<link rel="stylesheet" type="text/css" href="./styles/style.css"/>
 <body>
-
-
-
 	<div id="matrixview"></div>
+	<div id="matrixTestInput"></div>
+	<button id="updateMatrixBtn" >Click me</button>
 
 
 	<script src="http://d3js.org/d3.v2.min.js?2.8.1"></script>
 	<script src="./js/matrix.js"></script>
 
 	<script>
-	var matrixData = {
-		test: true
-	}; 
 
-	var matrixViewTest = new MatrixView("#matrixView");
+	var matrixViewTest = new MatrixView("#matrixview");
 
-	matrixViewTest.loadData(matrixData);;
+	d3.json("miserables.json", function(matrixData) {
+		matrixViewTest.loadData(matrixData);
+		var textAreaData = d3.select('#matrixTestInput').selectAll('textarea').data([matrixData]);
+		textAreaData.exit().remove();
+		textAreaData.enter().append('textarea')
+			.attr('cols', 80)
+			.attr('rows', 5)
+			.text(function(d) { 
+				return JSON.stringify(d); 
+			});
+	});
+
+	var updateMatrix = function() {
+		var matrixData = JSON.parse(d3.select('#matrixTestInput>textarea')[0][0].value);
+		matrixViewTest.loadData(matrixData);
+	};
+
+	d3.select('#updateMatrixBtn').on('click', updateMatrix);
 
 
 	</script>

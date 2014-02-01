@@ -1,29 +1,35 @@
 (function() {
-	"use strict";
-	var private_var;
+"use strict";
 
-	function _loadData(_svg, _matrixData) {
-		console.log(_matrixData);
 
-		var margin = {top: 80, right: 0, bottom: 10, left: 80},
-		width = 720,
-		height = 720;
+function _MatrixView (_id) {
 
-		var x = d3.scale.ordinal().rangeBands([0, width]),
+	var margin = {top: 80, right: 0, bottom: 10, left: 80},
+	width = 720,
+	height = 720;
+
+	var svg = d3.select(_id).append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.style("margin-left", -margin.left + "px")
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	var x = d3.scale.ordinal().rangeBands([0, width]),
 		z = d3.scale.linear().domain([0, 4]).clamp(true),
 		c = d3.scale.category10().domain(d3.range(10));
 
-		var svg = d3.select("body").append("svg")
-		.attr("width", width + margin.left + margin.right)
-		.attr("height", height + margin.top + margin.bottom)
-		.style("margin-left", -margin.left + "px")
-		.append("g")
-		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	svg.append("rect")
+		  .attr("class", "background")
+		  .attr("width", width)
+		  .attr("height", height);
 
-		d3.json("miserables.json", function(miserables) {
-			var matrix = [],
-			nodes = miserables.nodes,
-			n = nodes.length;
+	this.loadData = function(_matrixData) {
+
+
+		var matrix = [],
+		nodes = _matrixData.nodes,
+		n = nodes.length;
 
 		  // Compute index per node.
 		  nodes.forEach(function(node, i) {
@@ -33,7 +39,7 @@
 		  });
 
 		  // Convert links to matrix; count character occurrences.
-		  miserables.links.forEach(function(link) {
+		  _matrixData.links.forEach(function(link) {
 		  	matrix[link.source][link.target].z += link.value;
 		  	matrix[link.target][link.source].z += link.value;
 		  	matrix[link.source][link.source].z += link.value;
@@ -52,14 +58,15 @@
 		  // The default sort order.
 		  x.domain(orders.name);
 
-		  svg.append("rect")
-		  .attr("class", "background")
-		  .attr("width", width)
-		  .attr("height", height);
 
-		  var row = svg.selectAll(".row")
-		  .data(matrix)
-		  .enter().append("g")
+
+		  var rowData = svg.selectAll(".row")
+		  .data(matrix, function(d,i) { return nodes[i].name; });
+
+		  rowData.exit().remove();
+
+
+		  var row = rowData.enter().append("g")
 		  .attr("class", "row")
 		  .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
 		  .each(row);
@@ -74,9 +81,12 @@
 		  .attr("text-anchor", "end")
 		  .text(function(d, i) { return nodes[i].name; });
 
-		  var column = svg.selectAll(".column")
-		  .data(matrix)
-		  .enter().append("g")
+		  var columnData = svg.selectAll(".column")
+		  .data(matrix, function(d,i) { return nodes[i].name; });
+
+		  columnData.exit().remove();
+
+		  var column = columnData.enter().append("g")
 		  .attr("class", "column")
 		  .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
 
@@ -135,36 +145,12 @@
 		  	.attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
 		  }
 
-		  var timeout = setTimeout(function() {
-		  	order("group");
-		  	d3.select("#order").property("selectedIndex", 2).node().focus();
-		  }, 5000);
-		});
-
-
-
-
-
-
-
-
-
-
-
-
+		  // var timeout = setTimeout(function() {
+		  // 	order("group");
+		  // 	d3.select("#order").property("selectedIndex", 2).node().focus();
+		  // }, 5000);
+	};
 }
-
-
-function _MatrixView (_id) {
-		//this.type = type;
-		//this.color = "red";
-		var svg = d3.select(_id).append("svg");
-
-
-		this.loadData = function(_matrixData) {
-			_loadData(svg, _matrixData);
-		};
-	}
 
 	//make a global reference to the matrix view
 	window.MatrixView = _MatrixView;
