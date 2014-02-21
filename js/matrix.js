@@ -35,7 +35,14 @@ function _MatrixView (_id) {
 		  nodes.forEach(function(node, i) {
 		  	node.index = i;
 		  	node.count = 0;
-		  	matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0}; });
+		  	matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0, nodeA: nodes[i].name, nodeB: nodes[j].name}; });
+		  	//add unique key that defines this first level matrix entry.
+		  	matrix[i].key = function() {
+		  		var values = matrix[i].map(function(d) {return d.z;});
+		  		return nodes[i].name + "(" + values.join() + ")";
+		  	};
+		  	//matrix row/column name
+		  	matrix[i].labelName = nodes[i].name;
 		  });
 
 		  // Convert links to matrix; count character occurrences.
@@ -46,6 +53,8 @@ function _MatrixView (_id) {
 		  	matrix[link.target][link.target].z += link.value;
 		  	nodes[link.source].count += link.value;
 		  	nodes[link.target].count += link.value;
+
+
 		  });
 
 		  // Precompute the orders.
@@ -58,17 +67,18 @@ function _MatrixView (_id) {
 		  // The default sort order.
 		  x.domain(orders.name);
 
-
-
 		  var rowData = svg.selectAll(".row")
-		  .data(matrix, function(d,i) { return nodes[i].name; });
+		  .data(matrix, function(d,i) { 
+		  	return d.key();
+		  });
 
 		  rowData.exit().remove();
 
-
 		  var row = rowData.enter().append("g")
 		  .attr("class", "row")
-		  .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+		  .attr("transform", function(d, i) { 
+		  	return "translate(0," + x(i) + ")"; 
+		  })
 		  .each(row);
 
 		  row.append("line")
@@ -79,10 +89,14 @@ function _MatrixView (_id) {
 		  .attr("y", x.rangeBand() / 2)
 		  .attr("dy", ".32em")
 		  .attr("text-anchor", "end")
-		  .text(function(d, i) { return nodes[i].name; });
+		  .text(function(d, i) { 
+		  	return d.labelName; 
+		  });
 
 		  var columnData = svg.selectAll(".column")
-		  .data(matrix, function(d,i) { return nodes[i].name; });
+		  .data(matrix, function(d,i) { 
+		  	return d.key();
+		  });
 
 		  columnData.exit().remove();
 
@@ -98,18 +112,31 @@ function _MatrixView (_id) {
 		  .attr("y", x.rangeBand() / 2)
 		  .attr("dy", ".32em")
 		  .attr("text-anchor", "start")
-		  .text(function(d, i) { return nodes[i].name; });
+		  .text(function(d, i) { 
+		  	return d.labelName; 
+		  });
 
 		  function row(row) {
-		  	var cell = d3.select(this).selectAll(".cell")
-		  	.data(row.filter(function(d) { return d.z; }))
-		  	.enter().append("rect")
+		  	var cellData = d3.select(this).selectAll(".cell")
+		  	.data(row.filter(function(d) { 
+		  		return d.z; 
+		  	}), function(d) {
+		  		return d.z;
+		  	});
+
+		  	cellData.exit().remove();
+
+		  	var cell = cellData.enter().append("rect")
 		  	.attr("class", "cell")
 		  	.attr("x", function(d) { return x(d.x); })
 		  	.attr("width", x.rangeBand())
 		  	.attr("height", x.rangeBand())
-		  	.style("fill-opacity", function(d) { return z(d.z); })
-		  	.style("fill", function(d) { return nodes[d.x].group == nodes[d.y].group ? c(nodes[d.x].group) : null; })
+		  	.style("fill-opacity", function(d) { 
+		  		return z(d.z); 
+		  	})
+		  	.style("fill", function(d) { 
+		  		return nodes[d.x].group == nodes[d.y].group ? c(nodes[d.x].group) : null; 
+		  	})
 		  	.on("mouseover", mouseover)
 		  	.on("mouseout", mouseout);
 		  }

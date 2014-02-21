@@ -20,8 +20,8 @@
 		var textAreaData = d3.select('#matrixTestInput').selectAll('textarea').data([matrixData]);
 		textAreaData.exit().remove();
 		textAreaData.enter().append('textarea')
-			.attr('cols', 80)
-			.attr('rows', 5)
+			.attr('cols', 160)
+			.attr('rows', 10)
 			.text(function(d) { 
 				return JSON.stringify(d); 
 			});
@@ -31,6 +31,8 @@
 		var matrixData = JSON.parse(d3.select('#matrixTestInput>textarea')[0][0].value);
 		matrixViewTest.loadData(matrixData);
 	};
+
+	//{"nodes":[{"name":"Myriel","group":1,"index":0,"count":31},{"name":"Myrie2","group":1,"index":1,"count":31}],"links":[{"source":0,"target":1,"value":1}]}
 
 	d3.select('#updateMatrixBtn').on('click', updateMatrix);
 
