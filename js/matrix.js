@@ -2,182 +2,194 @@
 "use strict";
 
 
-function _MatrixView (_id) {
+	function _MatrixView (_id) {
 
-	var margin = {top: 80, right: 0, bottom: 10, left: 80},
-	width = 720,
-	height = 720;
+		var matrixData;
 
-	var svg = d3.select(_id).append("svg")
-	.attr("width", width + margin.left + margin.right)
-	.attr("height", height + margin.top + margin.bottom)
-	.style("margin-left", -margin.left + "px")
-	.append("g")
-	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		var margin = {top: 80, right: 0, bottom: 10, left: 80},
+			width = 720,
+			height = 720;
 
-	var x = d3.scale.ordinal().rangeBands([0, width]),
-		z = d3.scale.linear().domain([0, 4]).clamp(true),
-		c = d3.scale.category10().domain(d3.range(10));
+		var row, column, rowLine, colLine, rowText, colText;
 
-	svg.append("rect")
-		  .attr("class", "background")
-		  .attr("width", width)
-		  .attr("height", height);
+		var svgElem = d3.select(_id).append("svg")
+		.style("margin-left", -margin.left + "px");
 
-	this.loadData = function(_matrixData) {
+		var svg = svgElem.append("g")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+		var x = d3.scale.ordinal().rangeBands([0, width]), 
+			y = d3.scale.ordinal().rangeBands([0, height]), 
+			z = d3.scale.linear().domain([0, 4]).clamp(true);
 
-		var matrix = [],
-		nodes = _matrixData.nodes,
-		n = nodes.length;
+		var rect = svg.append("rect")
+			  .attr("class", "background");
 
-		  // Compute index per node.
-		  nodes.forEach(function(node, i) {
-		  	node.index = i;
-		  	node.count = 0;
-		  	matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0, nodeA: nodes[i].name, nodeB: nodes[j].name}; });
-		  	//add unique key that defines this first level matrix entry.
-		  	matrix[i].key = function() {
-		  		var values = matrix[i].map(function(d) {return d.z;});
-		  		return nodes[i].name + "(" + values.join() + ")";
-		  	};
-		  	//matrix row/column name
-		  	matrix[i].labelName = nodes[i].name;
-		  });
+		var redraw = function() {
+			svgElem.attr("width", width + margin.left + margin.right);
+			svgElem.attr("height", height + margin.top + margin.bottom);
+			rect.attr("width", width);
+			rect.attr("height", height);
+			x.rangeBands([0, width]);
+			y.rangeBands([0, height]);
+			var xRangeBand = x.rangeBand();
+			var yRangeBand = y.rangeBand();
+			if (isFinite(xRangeBand) && isFinite(yRangeBand)) {
+				row.attr("transform", function(d, i) { 
+			  		return "translate(0," + y(i) + ")"; 
+			  	});
+				rowText.attr("y", yRangeBand / 2);
+				rowText.attr("font-size", yRangeBand + "px");
+				rowLine.attr("x2", height);
+				column.attr("transform", function(d, i) { 
+			  		return "translate(" + x(i) + ")rotate(-90)"; 
+			  	});
+				colText.attr("y", xRangeBand / 2);
+				colText.attr("font-size", xRangeBand + "px");
+				colLine.attr("x1", -width);
+				d3.selectAll(".cell")
+					.attr("width", xRangeBand)
+					.attr("height", yRangeBand)
+					.attr("x", function(d) { return x(d.x); })
+			}
+		};
 
-		  // Convert links to matrix; count character occurrences.
-		  _matrixData.links.forEach(function(link) {
-		  	matrix[link.source][link.target].z += link.value;
-		  	matrix[link.target][link.source].z += link.value;
-		  	matrix[link.source][link.source].z += link.value;
-		  	matrix[link.target][link.target].z += link.value;
-		  	nodes[link.source].count += link.value;
-		  	nodes[link.target].count += link.value;
+		this.size = function(_size) {
+			if (_size) {
+				width = _size.width;
+				height = _size.height;
+				return this;	
+			} else {
+				return {
+					width: width,
+					height: height
+				};
+			}
+		};
 
+		this.data = function(_matrixData) {
+			matrixData = _matrixData;
+			return this;
+		};
 
-		  });
+		this.render = function() {
+			if (!matrixData) {
+				return;
+			}
+			var matrix = [],
+			nodes = matrixData.nodes,
+			n = nodes.length;
 
-		  // Precompute the orders.
-		  var orders = {
-		  	name: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
-		  	count: d3.range(n).sort(function(a, b) { return nodes[b].count - nodes[a].count; }),
-		  	group: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; })
-		  };
+			  // Compute index per node.
+			  nodes.forEach(function(node, i) {
+			  	node.index = i;
+			  	matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0, nodeA: nodes[j].name, nodeB: nodes[i].name}; });
+			  	//add unique key that defines this first level matrix entry.
+			  	matrix[i].key = function() {
+			  		var values = matrix[i].map(function(d) {return d.z;});
+			  		console.log(Math.random() + nodes[i].name + "(" + values.join() + ")");
+			  		return Math.random() + nodes[i].name + "(" + values.join() + ")";
+			  	};
+			  	//matrix row/column name
+			  	matrix[i].labelName = nodes[i].name;
+			  });
 
-		  // The default sort order.
-		  x.domain(orders.name);
+			  // Convert links to matrix; count character occurrences.
+			  matrixData.links.forEach(function(link) {
+			  	matrix[link.source][link.target].z += link.value;
+			  	matrix[link.target][link.source].z += link.value;
+			  	matrix[link.source][link.source].z += link.value;
+			  	matrix[link.target][link.target].z += link.value;
+			  });
 
-		  var rowData = svg.selectAll(".row")
-		  .data(matrix, function(d,i) { 
-		  	return d.key();
-		  });
+			  // Precompute the orders.
+			  var orders = {
+			  	name: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); })
+			  };
 
-		  rowData.exit().remove();
+			  // The default sort order.
+			  x.domain(orders.name);
+			  y.domain(orders.name);
 
-		  var row = rowData.enter().append("g")
-		  .attr("class", "row")
-		  .attr("transform", function(d, i) { 
-		  	return "translate(0," + x(i) + ")"; 
-		  })
-		  .each(row);
+			  var rowData = svg.selectAll(".row")
+			  .data(matrix, function(d,i) { 
+			  	return d.key();
+			  });
 
-		  row.append("line")
-		  .attr("x2", width);
+			  rowData.exit().remove();
 
-		  row.append("text")
-		  .attr("x", -6)
-		  .attr("y", x.rangeBand() / 2)
-		  .attr("dy", ".32em")
-		  .attr("text-anchor", "end")
-		  .text(function(d, i) { 
-		  	return d.labelName; 
-		  });
+			  row = rowData.enter().append("g")
+			  .attr("class", "row")
+			  .each(renderRow);
 
-		  var columnData = svg.selectAll(".column")
-		  .data(matrix, function(d,i) { 
-		  	return d.key();
-		  });
+			  rowLine = row.append("line");
 
-		  columnData.exit().remove();
+			  rowText = row.append("text")
+				  .attr("x", -6)
+				  .attr("dy", ".32em")
+				  .attr("text-anchor", "end")
+				  .attr("class", function(d) {
+				  	return d.labelName+ "rowName";;
+				  })
+				  .text(function(d, i) { 
+				  	return d.labelName; 
+				  });
 
-		  var column = columnData.enter().append("g")
-		  .attr("class", "column")
-		  .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+			  var columnData = svg.selectAll(".column")
+			  .data(matrix, function(d,i) { 
+			  	return d.key();
+			  });
 
-		  column.append("line")
-		  .attr("x1", -width);
+			  columnData.exit().remove();
 
-		  column.append("text")
-		  .attr("x", 6)
-		  .attr("y", x.rangeBand() / 2)
-		  .attr("dy", ".32em")
-		  .attr("text-anchor", "start")
-		  .text(function(d, i) { 
-		  	return d.labelName; 
-		  });
+			  column = columnData.enter().append("g")
+			  .attr("class", "column");
 
-		  function row(row) {
-		  	var cellData = d3.select(this).selectAll(".cell")
-		  	.data(row.filter(function(d) { 
-		  		return d.z; 
-		  	}), function(d) {
-		  		return d.z;
-		  	});
+			  colLine = column.append("line");
 
-		  	cellData.exit().remove();
+			  colText = column.append("text")
+			  .attr("x", 6)
+			  .attr("dy", ".32em")
+			  .attr("text-anchor", "start")
+			  .attr("class", function(d) {
+			  	return d.labelName + "colName";
+			  })
+			  .text(function(d, i) { 
+			  	return d.labelName; 
+			  });
 
-		  	var cell = cellData.enter().append("rect")
-		  	.attr("class", "cell")
-		  	.attr("x", function(d) { return x(d.x); })
-		  	.attr("width", x.rangeBand())
-		  	.attr("height", x.rangeBand())
-		  	.style("fill-opacity", function(d) { 
-		  		return z(d.z); 
-		  	})
-		  	.style("fill", function(d) { 
-		  		return nodes[d.x].group == nodes[d.y].group ? c(nodes[d.x].group) : null; 
-		  	})
-		  	.on("mouseover", mouseover)
-		  	.on("mouseout", mouseout);
-		  }
+			  function renderRow(row) {
+			  	var cellData = d3.select(this).selectAll(".cell")
+			  	.data(row.filter(function(d) { 
+			  		return d.z; 
+			  	}), function(d) {
+			  		return d.nodeA + '-' + parseInt(d.x) + '-' + parseInt(d.y) + '-' + parseInt(d.z) + '-' + d.nodeB;
+			  	});
 
-		  function mouseover(p) {
-		  	d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
-		  	d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
-		  }
+			  	cellData.exit().remove();
 
-		  function mouseout() {
-		  	d3.selectAll("text").classed("active", false);
-		  }
+			  	var cell = cellData.enter().append("rect")
+			  	.attr("class", "cell matrixCell")
+			  	.style("fill-opacity", function(d) { 
+			  		return z(d.z); 
+			  	})
+			  	.on("mouseover", mouseover)
+			  	.on("mouseout", mouseout);
+			  }
 
-		  d3.select("#order").on("change", function() {
-		  	clearTimeout(timeout);
-		  	order(this.value);
-		  });
+			  function mouseover(p) {
+			  	d3.selectAll("." + p.nodeA + "colName").classed("active", true);
+			  	d3.selectAll("." + p.nodeB + "rowName").classed("active", true);
+			  }
 
-		  function order(value) {
-		  	x.domain(orders[value]);
+			  function mouseout() {
+			  	d3.selectAll("text").classed("active", false);
+			  }
+			  redraw();
 
-		  	var t = svg.transition().duration(2500);
+		};
 
-		  	t.selectAll(".row")
-		  	.delay(function(d, i) { return x(i) * 4; })
-		  	.attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
-		  	.selectAll(".cell")
-		  	.delay(function(d) { return x(d.x) * 4; })
-		  	.attr("x", function(d) { return x(d.x); });
-
-		  	t.selectAll(".column")
-		  	.delay(function(d, i) { return x(i) * 4; })
-		  	.attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
-		  }
-
-		  // var timeout = setTimeout(function() {
-		  // 	order("group");
-		  // 	d3.select("#order").property("selectedIndex", 2).node().focus();
-		  // }, 5000);
-	};
-}
+	}
 
 	//make a global reference to the matrix view
 	window.MatrixView = _MatrixView;

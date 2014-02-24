@@ -5,6 +5,10 @@
   fill: #eee;
 }
 
+.matrixCell {
+  fill: #000;
+}
+
 line {
   stroke: #fff;
 }
