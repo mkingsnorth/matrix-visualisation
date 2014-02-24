@@ -18,7 +18,7 @@
 
 	d3.json("miserables.json", function(matrixData) {
 		matrixViewTest.data(matrixData);
-		matrixViewTest.render();
+		//matrixViewTest.render();
 		var textAreaData = d3.select('#matrixTestInput').selectAll('textarea').data([matrixData]);
 		textAreaData.exit().remove();
 		textAreaData.enter().append('textarea')
@@ -33,7 +33,7 @@
 		var matrixData = JSON.parse(d3.select('#matrixTestInput>textarea')[0][0].value);
 		matrixViewTest.data(matrixData);
 		matrixViewTest.size({width: 400, height: 400});
-		matrixViewTest.render();
+		//matrixViewTest.render();
 		
 	};
 
